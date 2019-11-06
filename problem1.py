@@ -13,43 +13,47 @@
 
 import math
 import queue
+import numpy as np
+
+
+def getErlang2(u,l=1):
+	return (-np.log(u)/(2*l)) + (-np.log(u)/(2*l))
+
+# u is a number drawn from a random uniform distribution (between 0 and 1)
+# l is the rate of the exp distrbution
+def getEXP(u,l=1):
+	return -np.log(u)/l
 
 #
 # Arrival time = exponentially distributed
 # Service time = erlang distribution
 # Iterations = number of seconds
-def simulate_M_E2_1(iterations=25, arrival_rate=1, mean_service_time=0.8):
+def simulate_M_E2_1(total_jobs=1000, arrival_rate=1, mean_service_time=0.8):
 
-	N = [] # list of number of jobs in the system after service completion of the kth customer for all k customers
-	N_k = 0 # number of jobs in the system after service completion of the kth customer
-	total_customers = 1.0
-	completed_jobs = 1.0
-	arrival_queue = queue.Queue(maxsize=iterations)
-	#serving = True
+	k = total_jobs # Total number of jobs
+	rand_samples = np.random.random_sample((k,))
 
-	time = 0
-	while len(N) <= iterations:
+	arrival_queue = queue.Queue(maxsize=k-1)
+	service_queue = queue.Queue(maxsize=1)
 
-		# Job arrival at EXP(1t)
-		# Add jobs to queue
-		num_jobs = math.floor( math.exp(time) - completed_jobs)
-		total_customers += num_jobs
+	arrival_times = np.zeros(k)
+	continuous_arrivals = np.zeros(k)
+	service_times = np.zeros(k)
+	continuous_service = np.zeros(k)
 
-		# Push the new jobs waiting
-		for i in range(num_jobs):
-			arrival_queue.put(i)
+	# Setting rates
+	for i,_ in enumerate(arrival_times):
+		arrival_times[i] = getEXP(rand_samples[i])
+		service_times[i] = getErlang2(rand_samples[i])
 
-		# A job is completes service
-		N_k = arrival_queue.qsize()
-		N.append(N_k)
-		completed_jobs += 1
+		if i == 0:
+			continuous_arrivals[i] = arrival_times[i]
+			continuous_service[i] = service_times[i]
+		else:
+			continuous_arrivals[i] = arrival_times[i] + continuous_arrivals[i-1]
+			continuous_service[i] = service_times[i] + continuous_service[i-1]
 
-		# Pop the next job to be serviced
-		arrival_queue.get()
-
-		time = (5.0 * math.log(total_customers) ) / 4.0
-
-	return N
+	return 0
 
 def main():
 
