@@ -48,15 +48,19 @@ def addToQueue(list2Check, que):
 
 	return que
 
-def graph(x, xlabel, ylabel, title):
+def graph(x, xlabel, ylabel, title, isDiscrete=True):
 
-	plt.plot(x)
+	if isDiscrete:
+		y = [i for i in range(len(x))]
+		plt.scatter(x,y)
+	else:
+		plt.plot(x)
 	plt.title(title)
 	plt.xlabel(xlabel)
 	plt.ylabel(ylabel)
 	plt.show()
-
 	return 0
+	
 #
 # Arrival time = exponentially distributed
 # Service time = erlang distribution
@@ -77,9 +81,11 @@ def simulate_M_E2_1(total_jobs=1000, arrival_rate=1, mean_service_time=0.8):
 	continuous_service = np.zeros(k)
 
 	N_k = np.zeros(k+1)
-	exit_times = np.copy(N_k) # related to X_t
+	exit_times = np.copy(N_k) # related to X_t and Y_t
 	W_n = np.zeros(k+1)
-	# Y_t 
+	
+	#DISCRETE = True
+	CONTINUOUS = False
 
 	# Setting rates
 	for i,_ in enumerate(arrival_times):
@@ -89,16 +95,15 @@ def simulate_M_E2_1(total_jobs=1000, arrival_rate=1, mean_service_time=0.8):
 		if i == 0:
 			continuous_arrivals[i] = arrival_times[i]
 			continuous_service[i] = service_times[i] + arrival_times[i]
-		#elif i == 1:
-			#continuous_arrivals[i] = arrival_times[i] + continuous_arrivals[i-1]
-			#continuous_service[i] = service_times[i] + continuous_service[i-1] + continuous_arrivals[i-1]
+
 		else:
 			continuous_arrivals[i] = arrival_times[i] + continuous_arrivals[i-1]
 			continuous_service[i] = service_times[i] + continuous_service[i-1] #+ continuous_arrivals[i-1]
 
-	#print(continuous_arrivals)
-	#print(continuous_service)
-	#print(continuous_service - service_times)
+			# Because a service cannot be serviced before it arrives
+			time_diff = continuous_service[i] - continuous_arrivals[i]
+			if time_diff < 0:
+				continuous_service[i] += -time_diff
 	
 	# Figure 6.3
 	for index, k in enumerate(continuous_service):
@@ -111,9 +116,7 @@ def simulate_M_E2_1(total_jobs=1000, arrival_rate=1, mean_service_time=0.8):
 		if not arrival_queue.empty():
 			arrival_queue.get()
 	
-	#graph(N_k,"k","Nk", "Figure 6.3")
-	service_queue.queue.clear()
-	arrival_queue.queue.clear()
+	graph(N_k,"k","Nk", "Figure 6.3")
 
 	# Figure 6.4
 	final_time = int( np.ceil(exit_times[-1]) )
@@ -126,13 +129,23 @@ def simulate_M_E2_1(total_jobs=1000, arrival_rate=1, mean_service_time=0.8):
 		target_val = N_k[target_index]
 		X_t.append(target_val)
 
-	graph(X_t,"t","X(t)", "Figure 6.4")
+	graph(X_t,"t","X(t)", "Figure 6.4", CONTINUOUS)
 
 	# Figure 6.5
 	W_n = continuous_service - continuous_arrivals
 	graph(W_n,"k","Wn", "Figure 6.5")
 
 	# Figure 6.6
+	Y_t = []
+	for t in range(final_time):
+
+		# Get the index of times less than current time
+		result = np.where(exit_times <= t)
+		target_index = result[0][-1]
+		target_val = W_n[target_index]
+		Y_t.append(target_val)
+
+	graph(Y_t,"t","Y(t)", "Figure 6.6", CONTINUOUS)
 
 	return 0
 
